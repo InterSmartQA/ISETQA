@@ -138,13 +138,20 @@
       display: block;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
+    /* Table Container for Horizontal Scrolling */
+    .table-container {
+      overflow-x: auto;
       margin-top: 1rem;
-      background-color: #ffffff;
-      border: 1px solid #e2e8f0;
       border-radius: 5px;
+      border: 1px solid #e2e8f0;
+      min-width: 100%; /* Ensures the container takes full width of parent */
+      -webkit-overflow-scrolling: touch; /* Smooth scrolling on touch devices */
+    }
+
+    table {
+      width: max-content; /* Allows table to take its natural width for scrolling */
+      border-collapse: collapse;
+      background-color: #ffffff;
       overflow: hidden;
     }
 
@@ -152,6 +159,7 @@
       padding: 0.75rem;
       text-align: left;
       border-bottom: 1px solid #e2e8f0;
+      white-space: nowrap; /* Prevents text wrapping to keep columns compact */
     }
 
     th {
@@ -487,25 +495,27 @@
         <button onclick="addNewRow('weekly')">Add New Row</button>
         <button onclick="exportTableToExcel('weeklyTable')">Export to Excel</button>
       </div>
-      <table id="weeklyTable">
-        <thead>
-          <tr>
-            <th>Week</th>
-            <th>Number</th>
-            <th>Modules</th>
-            <th>Topics</th>
-            <th>Date</th>
-            <th>Duration</th>
-            <th>Class Number</th>
-            <th>Note Links</th>
-            <th>Task List</th>
-            <th>Task Links</th>
-            <th>Additional Tasks</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <div class="table-container">
+        <table id="weeklyTable">
+          <thead>
+            <tr>
+              <th>Week</th>
+              <th>Number</th>
+              <th>Modules</th>
+              <th>Topics</th>
+              <th>Date</th>
+              <th>Duration</th>
+              <th>Class Number</th>
+              <th>Note Links</th>
+              <th>Task List</th>
+              <th>Task Links</th>
+              <th>Additional Tasks</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
       <div id="weeklyPagination" class="pagination"></div>
       <div id="errorMessage" class="error-message hidden"></div>
     </div>
@@ -523,18 +533,20 @@
         <button onclick="addNewRow('attendance')">Add New Row</button>
         <button onclick="exportTableToExcel('attendanceTable')">Export to Excel</button>
       </div>
-      <table id="attendanceTable">
-        <thead>
-          <tr>
-            <th>Student Name</th>
-            <th>Date</th>
-            <th>Status</th>
-            <th>Notes</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <div class="table-container">
+        <table id="attendanceTable">
+          <thead>
+            <tr>
+              <th>Student Name</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Notes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
       <div id="attendancePagination" class="pagination"></div>
       <div class="chart-container">
         <canvas id="attendanceChart"></canvas>
@@ -555,19 +567,21 @@
         <button onclick="addNewRow('modules')">Add New Row</button>
         <button onclick="exportTableToExcel('moduleTable')">Export to Excel</button>
       </div>
-      <table id="moduleTable">
-        <thead>
-          <tr>
-            <th>Course</th>
-            <th>Module Name</th>
-            <th>Description</th>
-            <th>Duration (hrs)</th>
-            <th>Topics</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <div class="table-container">
+        <table id="moduleTable">
+          <thead>
+            <tr>
+              <th>Course</th>
+              <th>Module Name</th>
+              <th>Description</th>
+              <th>Duration (hrs)</th>
+              <th>Topics</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
       <div id="modulePagination" class="pagination"></div>
     </div>
   </div>
