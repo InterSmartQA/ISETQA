@@ -25,7 +25,6 @@
       line-height: 1.6;
     }
 
-    /* Page Loader Styles */
     #pageLoader {
       position: fixed;
       top: 0;
@@ -138,34 +137,42 @@
       display: block;
     }
 
-    /* Table Container for Horizontal Scrolling */
     .table-container {
+      width: 100%;
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
       margin-top: 1rem;
-      border-radius: 5px;
-      border: 1px solid #e2e8f0;
-      min-width: 100%; /* Ensures the container takes full width of parent */
-      -webkit-overflow-scrolling: touch; /* Smooth scrolling on touch devices */
+      position: relative;
     }
 
     table {
-      width: max-content; /* Allows table to take its natural width for scrolling */
+      width: 100%;
+      min-width: 1200px;
       border-collapse: collapse;
       background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 5px;
       overflow: hidden;
+      table-layout: auto;
     }
 
     th, td {
       padding: 0.75rem;
       text-align: left;
       border-bottom: 1px solid #e2e8f0;
-      white-space: nowrap; /* Prevents text wrapping to keep columns compact */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 100px;
     }
 
     th {
       background-color: #1a202c;
       color: #ffffff;
       font-weight: 500;
+      position: sticky;
+      top: 0;
+      z-index: 1;
     }
 
     tr:hover {
@@ -175,6 +182,7 @@
     .actions {
       display: flex;
       gap: 1rem;
+      flex-wrap: nowrap;
     }
 
     button {
@@ -410,7 +418,6 @@
       z-index: 10;
     }
 
-    /* Responsive Design */
     @media (max-width: 768px) {
       header h1 {
         font-size: 1.25rem;
@@ -444,17 +451,17 @@
 
       th, td {
         padding: 0.5rem;
-        font-size: 0.875rem;
+        font-size: 0.75rem;
+        min-width: 80px;
       }
 
       table {
-        font-size: 0.875rem;
+        min-width: 900px;
       }
     }
   </style>
 </head>
 <body>
-  <!-- Page Loader -->
   <div id="pageLoader">
     <div class="loader-spinner"></div>
   </div>
@@ -475,6 +482,16 @@
     </div>
   </div>
 
+  <div id="addCourseModal" class="modal">
+    <div class="modal-content">
+      <h2>Add New Course</h2>
+      <input type="text" id="newCourseName" placeholder="Enter course name">
+      <button onclick="addNewCourse()">Add Course</button>
+      <button onclick="closeAddCourseModal()">Cancel</button>
+      <div id="addCourseErrorMessage" class="error-message hidden"></div>
+    </div>
+  </div>
+
   <div id="mainContent" style="display: none;">
     <nav>
       <div class="tabs">
@@ -489,6 +506,9 @@
         <select id="weekFilter" onchange="filterTable('weekly')">
           <option value="">Filter by Week</option>
         </select>
+        <select id="courseFilterWeekly" onchange="filterTable('weekly')">
+          <option value="">Filter by Course</option>
+        </select>
         <input type="text" id="moduleFilter" placeholder="Filter by Module" oninput="filterTable('weekly')">
         <input type="text" id="dateFilter" placeholder="Filter by Date">
         <button onclick="resetFilters('weekly')">Reset Filters</button>
@@ -501,6 +521,7 @@
             <tr>
               <th>Week</th>
               <th>Number</th>
+              <th>Course</th>
               <th>Modules</th>
               <th>Topics</th>
               <th>Date</th>
@@ -510,6 +531,8 @@
               <th>Task List</th>
               <th>Task Links</th>
               <th>Additional Tasks</th>
+              <th>Instructor</th>
+              <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -557,14 +580,11 @@
       <div class="filters">
         <select id="courseFilter" onchange="filterTable('modules')">
           <option value="">Filter by Course</option>
-          <option value="Advanced Software Testing">Advanced Software Testing</option>
-          <option value="Basic Testing Course">Basic Testing Course</option>
-          <option value="Add-on Testing Course">Add-on Testing Course</option>
-          <option value="40 Days Testing Course">40 Days Testing Course</option>
         </select>
         <input type="text" id="moduleNameFilter" placeholder="Filter by Module Name" oninput="filterTable('modules')">
         <button onclick="resetFilters('modules')">Reset Filters</button>
         <button onclick="addNewRow('modules')">Add New Row</button>
+        <button onclick="showAddCourseModal()">Add Course</button>
         <button onclick="exportTableToExcel('moduleTable')">Export to Excel</button>
       </div>
       <div class="table-container">
@@ -587,7 +607,6 @@
   </div>
 
   <script>
-    // Ensure Supabase library is loaded before initializing
     if (typeof supabase === 'undefined') {
       console.error('Supabase library failed to load. Please check the CDN URL.');
       document.addEventListener('DOMContentLoaded', () => {
@@ -601,7 +620,6 @@
       });
     }
 
-    // Initialize Supabase client
     const SUPABASE_URL = 'https://rrdjygjylthrzygzkrnr.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyZGp5Z2p5bHRocnp5Z3prcm5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1MTYyMjAsImV4cCI6MjA2NDA5MjIyMH0.i7A1LO7SL_Qqr7Z2Oq8ObpafYflrY4mPCXx2UnX2bHs';
     let supabaseClient;
@@ -620,21 +638,21 @@
       });
     }
 
-    // Global variables
     let weeklyRows = [];
     let attendanceRows = [];
     let moduleRows = [];
+    let courses = [];
     const rowsPerPage = 15;
     let currentPages = { weekly: 1, attendance: 1, modules: 1 };
     let datepickers = [];
     let attendanceChart;
 
-    // Sample data (used only if database is empty)
     const sampleWeeklyData = [
       {
         id: generateUUID(),
         week: "Week 1",
         number: "1",
+        course_id: null,
         modules: "Introduction to QA",
         topics: "QA Fundamentals, Testing Principles",
         date: "2025-06-01",
@@ -644,6 +662,8 @@
         task_list: "Task 1, Task 2",
         task_links: "https://docs.google.com/task1",
         additional_tasks: "Backup Task 1",
+        instructor: "Jane Smith",
+        status: "Planned",
         timestamp: new Date().toISOString()
       }
     ];
@@ -654,22 +674,32 @@
         date: "2025-06-01",
         status: "Present",
         notes: "Attended full session",
+        course_id: null,
+        session_type: "Lecture",
+        duration_minutes: 120,
         timestamp: new Date().toISOString()
       }
     ];
     const sampleModuleData = [
       {
         id: generateUUID(),
-        course: "Advanced Software Testing",
+        course_id: null,
         module_name: "Automation Testing",
         description: "Introduction to Selenium and automation frameworks",
-        duration: "4",
+        duration: 4,
         topics: "Selenium WebDriver, TestNG",
+        prerequisites: "Basic understanding of manual testing",
+        learning_objectives: "Learn automation testing basics",
         timestamp: new Date().toISOString()
       }
     ];
+    const sampleCourses = [
+      { id: generateUUID(), name: "Advanced Software Testing", description: "Covers advanced testing techniques" },
+      { id: generateUUID(), name: "Basic Testing Course", description: "Introduction to software testing" },
+      { id: generateUUID(), name: "Add-on Testing Course", description: "Additional testing modules" },
+      { id: generateUUID(), name: "40 Days Testing Course", description: "Intensive 40-day testing program" }
+    ];
 
-    // Utility to generate UUID
     function generateUUID() {
       return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -677,7 +707,6 @@
       });
     }
 
-    // Show error message
     function showError(message, elementId = 'errorMessage') {
       const errorMessage = document.getElementById(elementId);
       if (errorMessage) {
@@ -691,7 +720,6 @@
       }
     }
 
-    // Validate URL
     function isValidUrl(string) {
       try {
         new URL(string);
@@ -701,7 +729,6 @@
       }
     }
 
-    // Hide page loader
     function hidePageLoader() {
       const loader = document.getElementById('pageLoader');
       if (loader) {
@@ -709,7 +736,6 @@
       }
     }
 
-    // Show page loader
     function showPageLoader() {
       const loader = document.getElementById('pageLoader');
       if (loader) {
@@ -717,7 +743,6 @@
       }
     }
 
-    // Check if user is logged in
     async function checkAuthState() {
       if (!supabaseClient) {
         showError('Supabase client not initialized.', 'loginErrorMessage');
@@ -743,7 +768,6 @@
       }
     }
 
-    // Handle login
     async function handleLogin() {
       const emailInput = document.getElementById('email');
       const passwordInput = document.getElementById('password');
@@ -803,7 +827,6 @@
       }
     }
 
-    // Handle logout
     async function handleLogout() {
       const logoutButton = document.getElementById('logoutButton');
       if (!logoutButton) return;
@@ -824,6 +847,7 @@
         weeklyRows = [];
         attendanceRows = [];
         moduleRows = [];
+        courses = [];
         if (attendanceChart) {
           attendanceChart.destroy();
           attendanceChart = null;
@@ -838,15 +862,69 @@
       }
     }
 
-    // Reset all filters to ensure a clean initial state
+    function showAddCourseModal() {
+      document.getElementById('addCourseModal').classList.add('show');
+      document.getElementById('newCourseName').value = '';
+      document.getElementById('addCourseErrorMessage').classList.add('hidden');
+    }
+
+    function closeAddCourseModal() {
+      document.getElementById('addCourseModal').classList.remove('show');
+    }
+
+    async function addNewCourse() {
+      const courseNameInput = document.getElementById('newCourseName');
+      const courseName = courseNameInput.value.trim();
+      if (!courseName) {
+        showError('Course name is required.', 'addCourseErrorMessage');
+        return;
+      }
+
+      if (courses.some(course => course.name.toLowerCase() === courseName.toLowerCase())) {
+        showError('Course already exists.', 'addCourseErrorMessage');
+        return;
+      }
+
+      const newCourse = {
+        id: generateUUID(),
+        name: courseName
+      };
+
+      try {
+        const { error } = await supabaseClient.from('courses').insert([newCourse]);
+        if (error) throw error;
+        courses.push(newCourse);
+        updateCourseFilters();
+        closeAddCourseModal();
+        alert('Course added successfully!');
+      } catch (err) {
+        showError('Failed to add course: ' + err.message, 'addCourseErrorMessage');
+      }
+    }
+
+    function updateCourseFilters() {
+      const courseFilterWeekly = document.getElementById('courseFilterWeekly');
+      const courseFilterModules = document.getElementById('courseFilter');
+      if (courseFilterWeekly && courseFilterModules) {
+        const options = ['<option value="">Filter by Course</option>'];
+        courses.sort((a, b) => a.name.localeCompare(b.name)).forEach(course => {
+          options.push(`<option value="${course.id}">${course.name}</option>`);
+        });
+        courseFilterWeekly.innerHTML = options.join('');
+        courseFilterModules.innerHTML = options.join('');
+      }
+    }
+
     function resetAllFilters() {
       const tabs = ['weekly', 'attendance', 'modules'];
       tabs.forEach(tab => {
         if (tab === 'weekly') {
           const weekFilter = document.getElementById('weekFilter');
+          const courseFilterWeekly = document.getElementById('courseFilterWeekly');
           const moduleFilter = document.getElementById('moduleFilter');
           const dateFilter = document.getElementById('dateFilter');
           if (weekFilter) weekFilter.value = '';
+          if (courseFilterWeekly) courseFilterWeekly.value = '';
           if (moduleFilter) moduleFilter.value = '';
           if (dateFilter) dateFilter.value = '';
         } else if (tab === 'attendance') {
@@ -866,13 +944,7 @@
       });
     }
 
-    // Initialize tables after data load
     function initializeTables() {
-      console.log('Initializing tables...');
-      console.log('Weekly Rows:', weeklyRows);
-      console.log('Attendance Rows:', attendanceRows);
-      console.log('Module Rows:', moduleRows);
-
       const tables = [
         { tableId: 'weeklyTable', rows: weeklyRows, tab: 'weekly', paginationId: 'weeklyPagination' },
         { tableId: 'attendanceTable', rows: attendanceRows, tab: 'attendance', paginationId: 'attendancePagination' },
@@ -890,11 +962,11 @@
       });
 
       updateWeekFilter(weeklyRows);
+      updateCourseFilters();
       updateAttendanceChart();
       hidePageLoader();
     }
 
-    // Load data from Supabase
     async function loadDataFromSupabase() {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session) {
@@ -902,60 +974,108 @@
         return;
       }
 
-      // Reset pagination for all tabs
       currentPages = { weekly: 1, attendance: 1, modules: 1 };
-
-      // Reset all filters to ensure clean initial state
       resetAllFilters();
 
+      try {
+        let { data, error } = await supabaseClient.from('courses').select('*');
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          await supabaseClient.from('courses').insert(sampleCourses);
+          data = sampleCourses;
+        }
+
+        courses.length = 0;
+        courses.push(...data);
+      } catch (err) {
+        console.error('Error loading courses data:', err);
+        showError('Failed to load courses data: ' + err.message);
+        courses.length = 0;
+        courses.push(...sampleCourses);
+      }
+
       const collections = [
-        { name: 'weekly_plan', rows: weeklyRows, sampleData: sampleWeeklyData, table: 'weekly_plan' },
-        { name: 'attendance', rows: attendanceRows, sampleData: sampleAttendanceData, table: 'attendance' },
-        { name: 'modules', rows: moduleRows, sampleData: sampleModuleData, table: 'modules' }
+        { 
+          name: 'weekly_plan', 
+          rows: weeklyRows, 
+          sampleData: sampleWeeklyData.map(row => ({
+            ...row,
+            course_id: courses.find(c => c.name === 'Advanced Software Testing')?.id || courses[0]?.id
+          })), 
+          table: 'weekly_plan',
+          query: () => supabaseClient
+            .from('weekly_plan')
+            .select('*, courses!weekly_plan_course_fkey(name)')
+        },
+        { 
+          name: 'attendance', 
+          rows: attendanceRows, 
+          sampleData: sampleAttendanceData.map(row => ({
+            ...row,
+            course_id: courses.find(c => c.name === 'Basic Testing Course')?.id || courses[0]?.id
+          })), 
+          table: 'attendance',
+          query: () => supabaseClient.from('attendance').select('*')
+        },
+        { 
+          name: 'modules', 
+          rows: moduleRows, 
+          sampleData: sampleModuleData.map(row => ({
+            ...row,
+            course_id: courses.find(c => c.name === 'Advanced Software Testing')?.id || courses[0]?.id
+          })), 
+          table: 'modules',
+          query: () => supabaseClient
+            .from('modules')
+            .select('*, courses!modules_course_fkey(name)')
+        }
       ];
 
       for (const collection of collections) {
         try {
-          let { data, error } = await supabaseClient.from(collection.table).select('*');
+          let { data, error } = await collection.query();
           if (error) throw error;
 
-          // Insert sample data only if the table is empty and sample data doesn't already exist
           if (!data || data.length === 0) {
             const { data: existingData, error: fetchError } = await supabaseClient.from(collection.table).select('id');
             if (fetchError) throw fetchError;
             if (!existingData.some(row => collection.sampleData.some(sample => sample.id === row.id))) {
               await supabaseClient.from(collection.table).insert(collection.sampleData);
-              data = collection.sampleData;
+              const { data: newData, error: newError } = await collection.query();
+              if (newError) throw newError;
+              data = newData || collection.sampleData;
             } else {
               data = existingData;
             }
           }
 
-          // Map data to match frontend structure
           collection.rows.length = 0;
           collection.rows.push(...data.map(row => ({
             ...row,
-            rowId: row.id
+            rowId: row.id,
+            course_name: row.courses?.name || courses.find(c => c.id === row.course_id)?.name || ''
           })));
         } catch (err) {
           console.error(`Error loading ${collection.name} data:`, err);
           showError(`Failed to load ${collection.name} data: ${err.message}`);
           collection.rows.length = 0;
-          collection.rows.push(...collection.sampleData);
+          collection.rows.push(...collection.sampleData.map(row => ({
+            ...row,
+            rowId: row.id,
+            course_name: courses.find(c => c.id === row.course_id)?.name || ''
+          })));
         }
       }
 
-      // Initialize tables after data is loaded
       document.addEventListener('DOMContentLoaded', () => {
         initializeTables();
       });
-      // Fallback in case DOMContentLoaded has already fired
       if (document.readyState === 'complete' || document.readyState === 'interactive') {
         initializeTables();
       }
     }
 
-    // Save data to Supabase
     async function saveDataToSupabase(tab, rowData) {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session) {
@@ -977,7 +1097,6 @@
       }
     }
 
-    // Delete data from Supabase
     async function deleteDataFromSupabase(tab, rowId) {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session) {
@@ -999,7 +1118,6 @@
       }
     }
 
-    // Initialize Flatpickr
     document.addEventListener('DOMContentLoaded', () => {
       const dateFilter = document.getElementById('dateFilter');
       const attendanceDateFilter = document.getElementById('attendanceDateFilter');
@@ -1019,7 +1137,6 @@
       }
     });
 
-    // Tab switching
     document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', async () => {
         const { data: { session } } = await supabaseClient.auth.getSession();
@@ -1033,7 +1150,6 @@
         document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
         document.getElementById(tab.getAttribute('data-tab')).style.display = 'block';
 
-        // Force render on tab switch
         const tabName = tab.getAttribute('data-tab') === 'weeklyTab' ? 'weekly' :
                         tab.getAttribute('data-tab') === 'attendanceTab' ? 'attendance' :
                         'modules';
@@ -1050,7 +1166,6 @@
       });
     });
 
-    // Update week filter
     function updateWeekFilter(rows) {
       const weekFilter = document.getElementById('weekFilter');
       if (!weekFilter) return;
@@ -1065,7 +1180,6 @@
       });
     }
 
-    // Update attendance chart
     function updateAttendanceChart() {
       const ctx = document.getElementById('attendanceChart')?.getContext('2d');
       if (!ctx) return;
@@ -1111,7 +1225,6 @@
       });
     }
 
-    // Debounce function to prevent rapid filter calls
     function debounce(func, wait) {
       let timeout;
       return function executedFunction(...args) {
@@ -1124,7 +1237,6 @@
       };
     }
 
-    // Filter table
     const filterTable = debounce(async function(tab) {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session) {
@@ -1139,11 +1251,13 @@
           paginationId: 'weeklyPagination',
           getFilters: () => ({
             week: document.getElementById('weekFilter')?.value?.toLowerCase() || '',
+            course_id: document.getElementById('courseFilterWeekly')?.value || '',
             module: document.getElementById('moduleFilter')?.value?.toLowerCase() || '',
             date: document.getElementById('dateFilter')?.value || ''
           }),
           filterFn: (row, filters) => {
             const matchesWeek = row.week?.toLowerCase().includes(filters.week);
+            const matchesCourse = !filters.course_id || row.course_id === filters.course_id;
             const matchesModule = row.modules?.toLowerCase().includes(filters.module);
             let matchesDate = true;
             if (filters.date) {
@@ -1151,7 +1265,7 @@
               const filterDate = new Date(filters.date);
               matchesDate = rowDate && rowDate.toISOString().split('T')[0] === filters.date;
             }
-            return matchesWeek && matchesModule && matchesDate;
+            return matchesWeek && matchesCourse && matchesModule && matchesDate;
           }
         },
         attendance: {
@@ -1180,11 +1294,11 @@
           tableId: 'moduleTable',
           paginationId: 'modulePagination',
           getFilters: () => ({
-            course: document.getElementById('courseFilter')?.value || '',
+            course_id: document.getElementById('courseFilter')?.value || '',
             module: document.getElementById('moduleNameFilter')?.value?.toLowerCase() || ''
           }),
           filterFn: (row, filters) => {
-            const matchesCourse = !filters.course || row.course === filters.course;
+            const matchesCourse = !filters.course_id || row.course_id === filters.course_id;
             const matchesModule = row.module_name?.toLowerCase().includes(filters.module);
             return matchesCourse && matchesModule;
           }
@@ -1202,7 +1316,6 @@
       }
     }, 300);
 
-    // Render table rows
     function renderTableRows(tableId, rows, tab) {
       const tableBody = document.querySelector(`#${tableId} tbody`);
       if (!tableBody) {
@@ -1215,7 +1328,7 @@
       const paginatedRows = rows.slice(start, end);
 
       if (paginatedRows.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="${tableId === 'weeklyTable' ? 12 : tableId === 'attendanceTable' ? 5 : 6}">No data available</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="${tableId === 'weeklyTable' ? 15 : tableId === 'attendanceTable' ? 5 : 6}">No data available</td></tr>`;
         return;
       }
 
@@ -1226,6 +1339,7 @@
           newRow.innerHTML = `
             <td>${row.week || ''}</td>
             <td>${row.number || ''}</td>
+            <td>${row.course_name || ''}</td>
             <td>${row.modules || ''}</td>
             <td>${row.topics || ''}</td>
             <td>${row.date || ''}</td>
@@ -1235,6 +1349,8 @@
             <td>${row.task_list || ''}</td>
             <td><a href="${row.task_links || ''}" target="_blank">${row.task_links || ''}</a></td>
             <td>${row.additional_tasks || ''}</td>
+            <td>${row.instructor || ''}</td>
+            <td>${row.status || ''}</td>
             <td class="actions">
               <button class="edit-btn" onclick="editRow(event, this, '${tab}')" data-tooltip="Edit Row"><i class="fas fa-edit"></i></button>
               <button class="delete-btn" onclick="deleteRow(event, this, '${tab}')" data-tooltip="Delete Row"><i class="fas fa-trash"></i></button>
@@ -1253,7 +1369,7 @@
           `;
         } else {
           newRow.innerHTML = `
-            <td>${row.course || ''}</td>
+            <td>${row.course_name || ''}</td>
             <td>${row.module_name || ''}</td>
             <td>${row.description || ''}</td>
             <td>${row.duration || ''}</td>
@@ -1268,7 +1384,6 @@
       });
     }
 
-    // Update pagination
     function updatePagination(paginationId, totalRows, tab) {
       const pagination = document.getElementById(paginationId);
       if (!pagination) return;
@@ -1315,7 +1430,6 @@
       pagination.appendChild(nextButton);
     }
 
-    // Add new row
     async function addNewRow(tab) {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session) {
@@ -1330,7 +1444,7 @@
       newRow.setAttribute('data-rowid', newRowId);
       newRow.setAttribute('data-new', 'true');
       newRow.innerHTML = tab === 'weekly' ?
-        '<td></td>'.repeat(11) + '<td class="actions"><button class="edit-btn" onclick="editRow(event, this, \'weekly\')" data-tooltip="Edit Row"><i class="fas fa-edit"></i></button><button class="delete-btn" onclick="deleteRow(event, this, \'weekly\')" data-tooltip="Delete Row"><i class="fas fa-trash"></i></button></td>' :
+        '<td></td>'.repeat(14) + '<td class="actions"><button class="edit-btn" onclick="editRow(event, this, \'weekly\')" data-tooltip="Edit Row"><i class="fas fa-edit"></i></button><button class="delete-btn" onclick="deleteRow(event, this, \'weekly\')" data-tooltip="Delete Row"><i class="fas fa-trash"></i></button></td>' :
         tab === 'attendance' ?
         '<td></td>'.repeat(4) + '<td class="actions"><button class="edit-btn" onclick="editRow(event, this, \'attendance\')" data-tooltip="Edit Row"><i class="fas fa-edit"></i></button><button class="delete-btn" onclick="deleteRow(event, this, \'attendance\')" data-tooltip="Delete Row"><i class="fas fa-trash"></i></button></td>' :
         '<td></td>'.repeat(5) + '<td class="actions"><button class="edit-btn" onclick="editRow(event, this, \'modules\')" data-tooltip="Edit Row"><i class="fas fa-edit"></i></button><button class="delete-btn" onclick="deleteRow(event, this, \'modules\')" data-tooltip="Delete Row"><i class="fas fa-trash"></i></button></td>';
@@ -1338,7 +1452,6 @@
       editRow(null, newRow.querySelector('.edit-btn'), tab);
     }
 
-    // Edit row
     async function editRow(event, button, tab) {
       if (event) event.stopPropagation();
       const { data: { session } } = await supabaseClient.auth.getSession();
@@ -1360,12 +1473,17 @@
       cells.forEach((cell, index) => {
         const currentValue = cell.innerText;
         cell.innerHTML = '';
-        const input = document.createElement('input');
-        input.className = 'edit-input';
-        input.value = currentValue;
-        if ((tab === 'weekly' && index === 4) || (tab === 'attendance' && index === 1)) {
+        if ((tab === 'weekly' && index === 2) || (tab === 'modules' && index === 0)) {
+          const select = document.createElement('select');
+          select.className = 'edit-input';
+          select.innerHTML = courses.map(course => `<option value="${course.id}">${course.name}</option>`).join('');
+          select.value = courses.find(c => c.name === currentValue)?.id || courses[0]?.id;
+          cell.appendChild(select);
+        } else if ((tab === 'weekly' && index === 5) || (tab === 'attendance' && index === 1)) {
+          const input = document.createElement('input');
           input.className = 'flatpickr-input';
           input.readOnly = true;
+          input.value = currentValue;
           cell.appendChild(input);
           const fp = flatpickr(input, {
             dateFormat: 'Y-m-d',
@@ -1380,18 +1498,16 @@
           select.innerHTML = '<option value="Present">Present</option><option value="Absent">Absent</option>';
           select.value = currentValue || 'Present';
           cell.appendChild(select);
-        } else if (tab === 'modules' && index === 0) {
+        } else if (tab === 'weekly' && index === 13) {
           const select = document.createElement('select');
           select.className = 'edit-input';
-          select.innerHTML = `
-            <option value="Advanced Software Testing">Advanced Software Testing</option>
-            <option value="Basic Testing Course">Basic Testing Course</option>
-            <option value="Add-on Testing Course">Add-on Testing Course</option>
-            <option value="40 Days Testing Course">40 Days Testing Course</option>
-          `;
-          select.value = currentValue || 'Advanced Software Testing';
+          select.innerHTML = '<option value="Planned">Planned</option><option value="In Progress">In Progress</option><option value="Completed">Completed</option>';
+          select.value = currentValue || 'Planned';
           cell.appendChild(select);
         } else {
+          const input = document.createElement('input');
+          input.className = 'edit-input';
+          input.value = currentValue;
           cell.appendChild(input);
         }
       });
@@ -1405,7 +1521,6 @@
       `;
     }
 
-    // Cancel edit
     async function cancelEdit(event, button, tab) {
       if (event) event.stopPropagation();
       const { data: { session } } = await supabaseClient.auth.getSession();
@@ -1430,7 +1545,6 @@
       updatePagination(tab + 'Pagination', rows.length, tab);
     }
 
-    // Save row
     async function saveRow(event, button, tab) {
       if (event) event.stopPropagation();
       const { data: { session } } = await supabaseClient.auth.getSession();
@@ -1455,15 +1569,18 @@
         id: rowId,
         week: inputs[0],
         number: inputs[1],
-        modules: inputs[2],
-        topics: inputs[3],
-        date: inputs[4],
-        duration: inputs[5],
-        class_number: inputs[6],
-        note_links: inputs[7],
-        task_list: inputs[8],
-        task_links: inputs[9],
-        additional_tasks: inputs[10],
+        course_id: inputs[2],
+        modules: inputs[3],
+        topics: inputs[4],
+        date: inputs[5],
+        duration: inputs[6],
+        class_number: inputs[7],
+        note_links: inputs[8],
+        task_list: inputs[9],
+        task_links: inputs[10],
+        additional_tasks: inputs[11],
+        instructor: inputs[12],
+        status: inputs[13],
         timestamp: new Date().toISOString()
       } : tab === 'attendance' ? {
         id: rowId,
@@ -1471,10 +1588,13 @@
         date: inputs[1],
         status: inputs[2],
         notes: inputs[3],
+        course_id: courses[0]?.id || '',
+        session_type: 'Lecture',
+        duration_minutes: 120,
         timestamp: new Date().toISOString()
       } : {
         id: rowId,
-        course: inputs[0],
+        course_id: inputs[0],
         module_name: inputs[1],
         description: inputs[2],
         duration: inputs[3],
@@ -1482,9 +1602,8 @@
         timestamp: new Date().toISOString()
       };
 
-      // Validate inputs
-      if (!rowData.week && !rowData.student_name && !rowData.course) {
-        showError('Key field (Week, Student Name, or Course) is required.');
+      if (!rowData.week && !rowData.student_name && !rowData.course_id) {
+        showError('Key field (Week, Student Name, or Course ID) is required.');
         button.classList.remove('loading');
         button.disabled = false;
         return;
@@ -1528,7 +1647,11 @@
       }
 
       if (isNewRow) {
-        rows.push({ ...rowData, rowId: rowId });
+        rows.push({ 
+          ...rowData, 
+          rowId: rowId,
+          course_name: courses.find(c => c.id === rowData.course_id)?.name || ''
+        });
         row.removeAttribute('data-new');
       } else {
         const rowIndex = rows.findIndex(r => r.rowId === rowId);
@@ -1538,7 +1661,11 @@
           button.disabled = false;
           return;
         }
-        rows[rowIndex] = { ...rowData, rowId: rowId };
+        rows[rowIndex] = { 
+          ...rowData, 
+          rowId: rowId,
+          course_name: courses.find(c => c.id === rowData.course_id)?.name || ''
+        };
       }
 
       alert('Row saved successfully!');
@@ -1552,7 +1679,6 @@
       updatePagination(tab + 'Pagination', rows.length, tab);
     }
 
-    // Delete row
     async function deleteRow(event, button, tab) {
       if (event) event.stopPropagation();
       const { data: { session } } = await supabaseClient.auth.getSession();
@@ -1614,7 +1740,6 @@
       updatePagination(tab + 'Pagination', rows.length, tab);
     }
 
-    // Reset filters
     async function resetFilters(tab) {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session) {
@@ -1624,9 +1749,11 @@
 
       if (tab === 'weekly') {
         const weekFilter = document.getElementById('weekFilter');
+        const courseFilterWeekly = document.getElementById('courseFilterWeekly');
         const moduleFilter = document.getElementById('moduleFilter');
         const dateFilter = document.getElementById('dateFilter');
         if (weekFilter) weekFilter.value = '';
+        if (courseFilterWeekly) courseFilterWeekly.value = '';
         if (moduleFilter) moduleFilter.value = '';
         if (dateFilter) dateFilter.value = '';
       } else if (tab === 'attendance') {
@@ -1651,7 +1778,6 @@
       updatePagination(tab + 'Pagination', rows.length, tab);
     }
 
-    // Export table to Excel
     async function exportTableToExcel(tableId) {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session) {
@@ -1665,7 +1791,6 @@
       XLSX.writeFile(wb, `${tableId.replace('Table', '')}_ISET_QA_Tracker.xlsx`);
     }
 
-    // Initialize
     window.onload = async function() {
       try {
         await checkAuthState();
