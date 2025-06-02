@@ -6,7 +6,7 @@
   <title>ISET QA Handbook and Attendance Tracker</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -16,13 +16,13 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Roboto', sans-serif;
     }
 
     body {
-      background-color: #f7fafc;
-      color: #1a202c;
-      line-height: 1.6;
+      background-color: #f1f3f4;
+      color: #202124;
+      line-height: 1.5;
     }
 
     #pageLoader {
@@ -47,7 +47,7 @@
     .loader-spinner {
       width: 40px;
       height: 40px;
-      border: 4px solid #4a5568;
+      border: 4px solid #5f6368;
       border-top: 4px solid transparent;
       border-radius: 50%;
       animation: spin 1s linear infinite;
@@ -59,40 +59,42 @@
     }
 
     header {
-      background-color: #1a202c;
-      color: #ffffff;
-      padding: 1.5rem;
+      background-color: #fff;
+      border-bottom: 1px solid #dadce0;
+      padding: 1rem;
       text-align: center;
       position: relative;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }
 
     header img {
       max-width: 150px;
-      margin-bottom: 1rem;
+      margin-bottom: 0.5rem;
     }
 
     header h1 {
-      font-size: 1.5rem;
-      font-weight: 500;
+      font-size: 1.25rem;
+      font-weight: 400;
+      color: #202124;
     }
 
     #logoutButton {
       position: absolute;
-      top: 1.25rem;
-      right: 1.25rem;
-      background-color: #4a5568;
+      top: 1rem;
+      right: 1rem;
+      background-color: #1a73e8;
       color: #ffffff;
       border: none;
-      padding: 0.5rem 1.25rem;
-      border-radius: 5px;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
       cursor: pointer;
       font-weight: 500;
-      transition: background-color 0.3s;
+      transition: background-color 0.2s;
       display: none;
     }
 
     #logoutButton:hover {
-      background-color: #2d3748;
+      background-color: #1557b0;
     }
 
     #logoutButton.loading {
@@ -101,36 +103,39 @@
     }
 
     nav {
-      background-color: #1a202c;
-      padding: 0.75rem;
+      background-color: #f1f3f4;
+      padding: 0.5rem;
+      border-bottom: 1px solid #dadce0;
     }
 
     .tabs {
       display: flex;
       justify-content: center;
-      gap: 1rem;
+      gap: 0.5rem;
     }
 
     .tab {
-      padding: 0.5rem 1.5rem;
-      color: #ffffff;
+      padding: 0.5rem 1rem;
+      color: #202124;
       cursor: pointer;
-      border-radius: 5px;
-      transition: background-color 0.3s;
+      border-radius: 4px;
+      transition: background-color 0.2s;
       font-weight: 500;
+      background-color: #e8eaed;
     }
 
     .tab.active, .tab:hover {
-      background-color: #4a5568;
+      background-color: #d2e3fc;
+      color: #1a73e8;
     }
 
     .tab-content {
       display: none;
-      padding: 2rem;
+      padding: 1rem;
       background-color: #ffffff;
-      border-radius: 5px;
+      border: 1px solid #dadce0;
       margin: 1rem;
-      border: 1px solid #e2e8f0;
+      border-radius: 4px;
     }
 
     .tab-content.active {
@@ -143,94 +148,118 @@
       -webkit-overflow-scrolling: touch;
       margin-top: 1rem;
       position: relative;
-      /* Always show horizontal scroll if needed */
-      overflow-y: visible;
-      /* Optionally, add a min-width to the container for clarity */
+      background-color: #ffffff;
+      border: 1px solid #dadce0;
+      border-radius: 4px;
     }
 
     table {
       width: 100%;
-      min-width: 1200px;
       border-collapse: collapse;
       background-color: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 5px;
-      overflow: hidden;
       table-layout: auto;
     }
 
     th, td {
       padding: 0.75rem;
       text-align: left;
-      border-bottom: 1px solid #e2e8f0;
+      border-bottom: 1px solid #dadce0;
+      border-right: 1px solid #dadce0;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       min-width: 100px;
+      font-size: 0.875rem;
     }
 
     th {
-      background-color: #1a202c;
-      color: #ffffff;
+      background-color: #f1f3f4;
+      color: #202124;
       font-weight: 500;
       position: sticky;
       top: 0;
-      z-index: 1;
+      z-index: 10;
+      user-select: none;
+      border-top: 1px solid #dadce0;
+    }
+
+    th:last-child, td:last-child {
+      border-right: none;
+    }
+
+    th:hover {
+      background-color: #e8eaed;
+    }
+
+    .resize-handle {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 5px;
+      height: 100%;
+      cursor: col-resize;
+      background-color: transparent;
+      z-index: 11;
+    }
+
+    .resize-handle:hover, .resize-handle.active {
+      background-color: #1a73e8;
     }
 
     tr:hover {
-      background-color: #f7fafc;
+      background-color: #f5f5f5;
     }
 
     .actions {
       display: flex;
-      gap: 1rem;
+      gap: 0.5rem;
       flex-wrap: nowrap;
     }
 
     button {
-      padding: 0.5rem 1rem;
+      padding: 0.5rem;
       border: none;
-      border-radius: 5px;
+      border-radius: 4px;
       cursor: pointer;
-      transition: background-color 0.3s;
+      transition: background-color 0.2s;
       font-weight: 500;
+      font-size: 0.875rem;
     }
 
     .edit-btn {
-      background-color: #4a5568;
+      background-color: #1a73e8;
       color: #ffffff;
     }
 
     .edit-btn:hover {
-      background-color: #2d3748;
+      background-color: #1557b0;
     }
 
     .delete-btn {
-      background-color: #e53e3e;
+      background-color: #d93025;
       color: #ffffff;
     }
 
     .delete-btn:hover {
-      background-color: #c53030;
+      background-color: #b71c1c;
     }
 
     .save-btn {
-      background-color: #38a169;
+      background-color: #34a853;
       color: #ffffff;
     }
 
     .save-btn:hover {
-      background-color: #2f855a;
+      background-color: #2e7d32;
     }
 
     .cancel-btn {
-      background-color: #4a5568;
+      background-color: #5f6368;
       color: #ffffff;
     }
 
     .cancel-btn:hover {
-      background-color: #2d3748;
+      background-color: #4b4d51;
     }
 
     button.loading {
@@ -242,14 +271,14 @@
     button.loading::after {
       content: '';
       display: inline-block;
-      width: 14px;
-      height: 14px;
+      width: 12px;
+      height: 12px;
       border: 2px solid #ffffff;
       border-radius: 50%;
       border-top-color: transparent;
       animation: spin 1s linear infinite;
       position: absolute;
-      right: 10px;
+      right: 8px;
       top: 50%;
       transform: translateY(-50%);
     }
@@ -257,42 +286,47 @@
     .edit-input, .flatpickr-input {
       width: 100%;
       padding: 0.5rem;
-      border: 1px solid #e2e8f0;
-      border-radius: 5px;
-      transition: border-color 0.3s;
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      transition: border-color 0.2s;
     }
 
     .edit-input:focus, .flatpickr-input:focus {
-      border-color: #4a5568;
+      border-color: #1a73e8;
       outline: none;
+      box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
     }
 
     .filters {
       display: flex;
-      gap: 1rem;
+      gap: 0.5rem;
       margin-bottom: 1rem;
       flex-wrap: wrap;
+      padding: 0.5rem;
     }
 
     .filters select, .filters input {
       padding: 0.5rem;
-      border: 1px solid #e2e8f0;
-      border-radius: 5px;
-      transition: border-color 0.3s;
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      transition: border-color 0.2s;
     }
 
     .filters select:focus, .filters input:focus {
-      border-color: #4a5568;
+      border-color: #1a73e8;
       outline: none;
+      box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
     }
 
     .filters button {
-      background-color: #4a5568;
+      background-color: #1a73e8;
       color: #ffffff;
     }
 
     .filters button:hover {
-      background-color: #2d3748;
+      background-color: #1557b0;
     }
 
     .pagination {
@@ -304,18 +338,21 @@
 
     .pagination button {
       padding: 0.5rem 1rem;
-      background-color: #4a5568;
-      color: #ffffff;
-      border-radius: 5px;
+      background-color: #e8eaed;
+      color: #202124;
+      border-radius: 4px;
+      border: 1px solid #dadce0;
     }
 
     .pagination button:disabled {
-      background-color: #a0aec0;
+      background-color: #f1f3f4;
+      color: #5f6368;
       cursor: not-allowed;
     }
 
     .pagination button[data-active="true"] {
-      background-color: #2d3748;
+      background-color: #d2e3fc;
+      color: #1a73e8;
     }
 
     .modal {
@@ -328,6 +365,7 @@
       background-color: rgba(0, 0, 0, 0.5);
       justify-content: center;
       align-items: center;
+      z-index: 1000;
     }
 
     .modal.show {
@@ -336,51 +374,57 @@
 
     .modal-content {
       background-color: #ffffff;
-      padding: 2rem;
-      border-radius: 5px;
+      padding: 1.5rem;
+      border-radius: 4px;
       width: 90%;
       max-width: 400px;
-      border: 1px solid #e2e8f0;
+      border: 1px solid #dadce0;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
 
     .modal-content h2 {
       margin-bottom: 1rem;
       font-weight: 500;
-      color: #1a202c;
+      color: #202124;
+      font-size: 1.25rem;
     }
 
     .modal-content input {
       width: 100%;
       padding: 0.5rem;
       margin-bottom: 1rem;
-      border: 1px solid #e2e8f0;
-      border-radius: 5px;
-      transition: border-color 0.3s;
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      transition: border-color 0.2s;
     }
 
     .modal-content input:focus {
-      border-color: #4a5568;
+      border-color: #1a73e8;
       outline: none;
+      box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
     }
 
     .modal-content button {
       width: 100%;
       padding: 0.5rem;
-      background-color: #4a5568;
+      background-color: #1a73e8;
       color: #ffffff;
-      border-radius: 5px;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
     }
 
     .modal-content button:hover {
-      background-color: #2d3748;
+      background-color: #1557b0;
     }
 
     .error-message {
-      color: #e53e3e;
+      color: #d93025;
       margin-top: 0.5rem;
       text-align: center;
       opacity: 0;
       transition: opacity 0.3s;
+      font-size: 0.875rem;
     }
 
     .error-message.show {
@@ -393,14 +437,14 @@
     }
 
     .chart-container {
-      margin-top: 2rem;
+      margin-top: 1.5rem;
       max-width: 600px;
       margin-left: auto;
       margin-right: auto;
       background-color: #ffffff;
       padding: 1rem;
-      border-radius: 5px;
-      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      border: 1px solid #dadce0;
     }
 
     [data-tooltip] {
@@ -413,17 +457,18 @@
       bottom: 100%;
       left: 50%;
       transform: translateX(-50%);
-      background-color: #1a202c;
+      background-color: #5f6368;
       color: #ffffff;
       padding: 0.25rem 0.5rem;
-      border-radius: 5px;
+      border-radius: 4px;
       white-space: nowrap;
       z-index: 10;
+      font-size: 0.75rem;
     }
 
     @media (max-width: 768px) {
       header h1 {
-        font-size: 1.25rem;
+        font-size: 1.125rem;
       }
 
       header img {
@@ -431,17 +476,18 @@
       }
 
       #logoutButton {
-        padding: 0.5rem 1rem;
-        font-size: 0.875rem;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.75rem;
       }
 
       .tabs {
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 0.25rem;
       }
 
       .tab {
-        padding: 0.5rem 1rem;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.875rem;
       }
 
       .filters {
@@ -450,6 +496,7 @@
 
       .filters select, .filters input, .filters button {
         width: 100%;
+        font-size: 0.875rem;
       }
 
       th, td {
@@ -458,8 +505,8 @@
         min-width: 80px;
       }
 
-      table {
-        min-width: 900px;
+      .table-container {
+        overflow-x: auto;
       }
     }
   </style>
@@ -522,21 +569,21 @@
         <table id="weeklyTable">
           <thead>
             <tr>
-              <th>Week</th>
-              <th>Number</th>
-              <th>Course</th>
-              <th>Modules</th>
-              <th>Topics</th>
-              <th>Date</th>
-              <th>Duration</th>
-              <th>Class Number</th>
-              <th>Note Links</th>
-              <th>Task List</th>
-              <th>Task Links</th>
-              <th>Additional Tasks</th>
-              <th>Instructor</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th data-column="0">Week<div class="resize-handle"></div></th>
+              <th data-column="1">Number<div class="resize-handle"></div></th>
+              <th data-column="2">Course<div class="resize-handle"></div></th>
+              <th data-column="3">Modules<div class="resize-handle"></div></th>
+              <th data-column="4">Topics<div class="resize-handle"></div></th>
+              <th data-column="5">Date<div class="resize-handle"></div></th>
+              <th data-column="6">Duration<div class="resize-handle"></div></th>
+              <th data-column="7">Class Number<div class="resize-handle"></div></th>
+              <th data-column="8">Note Links<div class="resize-handle"></div></th>
+              <th data-column="9">Task List<div class="resize-handle"></div></th>
+              <th data-column="10">Task Links<div class="resize-handle"></div></th>
+              <th data-column="11">Additional Tasks<div class="resize-handle"></div></th>
+              <th data-column="12">Instructor<div class="resize-handle"></div></th>
+              <th data-column="13">Status<div class="resize-handle"></div></th>
+              <th data-column="14">Actions</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -563,11 +610,11 @@
         <table id="attendanceTable">
           <thead>
             <tr>
-              <th>Student Name</th>
-              <th>Date</th>
-              <th>Status</th>
-              <th>Notes</th>
-              <th>Actions</th>
+              <th data-column="0">Student Name<div class="resize-handle"></div></th>
+              <th data-column="1">Date<div class="resize-handle"></div></th>
+              <th data-column="2">Status<div class="resize-handle"></div></th>
+              <th data-column="3">Notes<div class="resize-handle"></div></th>
+              <th data-column="4">Actions</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -594,12 +641,12 @@
         <table id="moduleTable">
           <thead>
             <tr>
-              <th>Course</th>
-              <th>Module Name</th>
-              <th>Description</th>
-              <th>Duration (hrs)</th>
-              <th>Topics</th>
-              <th>Actions</th>
+              <th data-column="0">Course<div class="resize-handle"></div></th>
+              <th data-column="1">Module Name<div class="resize-handle"></div></th>
+              <th data-column="2">Description<div class="resize-handle"></div></th>
+              <th data-column="3">Duration (hrs)<div class="resize-handle"></div></th>
+              <th data-column="4">Topics<div class="resize-handle"></div></th>
+              <th data-column="5">Actions</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -962,12 +1009,52 @@
         }
         renderTableRows(tableId, rows, tab);
         updatePagination(paginationId, rows.length, tab);
+        initializeColumnResizing(tableId);
       });
 
       updateWeekFilter(weeklyRows);
       updateCourseFilters();
       updateAttendanceChart();
       hidePageLoader();
+    }
+
+    function initializeColumnResizing(tableId) {
+      const table = document.getElementById(tableId);
+      if (!table) return;
+      const headers = table.querySelectorAll('th');
+      let resizingElement = null;
+      let startX, startWidth;
+
+      headers.forEach((header, index) => {
+        const resizeHandle = header.querySelector('.resize-handle');
+        if (!resizeHandle) return;
+
+        resizeHandle.addEventListener('mousedown', (e) => {
+          resizingElement = header;
+          startX = e.clientX;
+          startWidth = header.offsetWidth;
+          resizeHandle.classList.add('active');
+          document.addEventListener('mousemove', handleMouseMove);
+          document.addEventListener('mouseup', handleMouseUp);
+        });
+      });
+
+      function handleMouseMove(e) {
+        if (resizingElement) {
+          const newWidth = startWidth + (e.clientX - startX);
+          const minWidth = 50;
+          resizingElement.style.width = `${Math.max(minWidth, newWidth)}px`;
+        }
+      }
+
+      function handleMouseUp() {
+        if (resizingElement) {
+          resizingElement.querySelector('.resize-handle').classList.remove('active');
+          resizingElement = null;
+          document.removeEventListener('mousemove', handleMouseMove);
+          document.removeEventListener('mouseup', handleMouseUp);
+        }
+      }
     }
 
     async function loadDataFromSupabase() {
@@ -1162,6 +1249,7 @@
                      moduleRows;
         renderTableRows(tableId, rows, tabName);
         updatePagination(tabName + 'Pagination', rows.length, tabName);
+        initializeColumnResizing(tableId);
 
         if (tabName === 'attendance') {
           updateAttendanceChart();
@@ -1209,7 +1297,7 @@
           datasets: [{
             label: 'Attendance Status',
             data: data,
-            backgroundColor: ['#38a169', '#e53e3e'],
+            backgroundColor: ['#34a853', '#d93025'],
             borderWidth: 1
           }]
         },
@@ -1218,10 +1306,23 @@
           plugins: {
             legend: {
               position: 'top',
+              labels: {
+                font: {
+                  family: 'Roboto',
+                  size: 14
+                },
+                color: '#202124'
+              }
             },
             title: {
               display: true,
-              text: 'Attendance Overview'
+              text: 'Attendance Overview',
+              font: {
+                family: 'Roboto',
+                size: 16,
+                weight: '500'
+              },
+              color: '#202124'
             }
           }
         }
@@ -1242,6 +1343,12 @@
 
     const filterTable = debounce(async function(tab) {
       const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) {
+        handleLogout();
+        return;
+      }
+
+ afeClient.auth.getSession();
       if (!session) {
         handleLogout();
         return;
@@ -1546,6 +1653,7 @@
                    moduleRows;
       renderTableRows(tableId, rows, tab);
       updatePagination(tab + 'Pagination', rows.length, tab);
+      initializeColumnResizing(tableId);
     }
 
     async function saveRow(event, button, tab) {
@@ -1680,6 +1788,7 @@
       const tableId = tab + 'Table';
       renderTableRows(tableId, rows, tab);
       updatePagination(tab + 'Pagination', rows.length, tab);
+      initializeColumnResizing(tableId);
     }
 
     async function deleteRow(event, button, tab) {
@@ -1708,6 +1817,7 @@
                      moduleRows;
         renderTableRows(tableId, rows, tab);
         updatePagination(tab + 'Pagination', rows.length, tab);
+        initializeColumnResizing(tableId);
         return;
       }
 
@@ -1723,6 +1833,7 @@
         const tableId = tab + 'Table';
         renderTableRows(tableId, rows, tab);
         updatePagination(tab + 'Pagination', rows.length, tab);
+        initializeColumnResizing(tableId);
         return;
       }
 
@@ -1741,6 +1852,7 @@
       const tableId = tab + 'Table';
       renderTableRows(tableId, rows, tab);
       updatePagination(tab + 'Pagination', rows.length, tab);
+      initializeColumnResizing(tableId);
     }
 
     async function resetFilters(tab) {
@@ -1779,6 +1891,7 @@
                    moduleRows;
       renderTableRows(tableId, rows, tab);
       updatePagination(tab + 'Pagination', rows.length, tab);
+      initializeColumnResizing(tableId);
     }
 
     async function exportTableToExcel(tableId) {
