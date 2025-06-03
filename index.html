@@ -1341,18 +1341,16 @@
       };
     }
 
-    const filterTable = debounce(async function(tab) {
+    // Enhanced filterTable with better null checks, debug logs, and pagination reset
+    window.filterTable = debounce(async function(tab) {
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (!session) {
         handleLogout();
         return;
       }
 
- afeClient.auth.getSession();
-      if (!session) {
-        handleLogout();
-        return;
-      }
+      // Reset to first page on filter
+      currentPages[tab] = 1;
 
       const filters = {
         weekly: {
@@ -1360,19 +1358,20 @@
           tableId: 'weeklyTable',
           paginationId: 'weeklyPagination',
           getFilters: () => ({
-            week: document.getElementById('weekFilter')?.value?.toLowerCase() || '',
+            week: (document.getElementById('weekFilter')?.value || '').toLowerCase(),
             course_id: document.getElementById('courseFilterWeekly')?.value || '',
-            module: document.getElementById('moduleFilter')?.value?.toLowerCase() || '',
+            module: (document.getElementById('moduleFilter')?.value || '').toLowerCase(),
             date: document.getElementById('dateFilter')?.value || ''
           }),
           filterFn: (row, filters) => {
-            const matchesWeek = row.week?.toLowerCase().includes(filters.week);
-            const matchesCourse = !filters.course_id || row.course_id === filters.course_id;
-            const matchesModule = row.modules?.toLowerCase().includes(filters.module);
+            const week = (row.week || '').toLowerCase();
+            const matchesWeek = !filters.week || week.includes(filters.week);
+            const matchesCourse = !filters.course_id || (row.course_id && row.course_id === filters.course_id);
+            const moduleVal = (row.modules || '').toLowerCase();
+            const matchesModule = !filters.module || moduleVal.includes(filters.module);
             let matchesDate = true;
             if (filters.date) {
               const rowDate = row.date ? new Date(row.date) : null;
-              const filterDate = new Date(filters.date);
               matchesDate = rowDate && rowDate.toISOString().split('T')[0] === filters.date;
             }
             return matchesWeek && matchesCourse && matchesModule && matchesDate;
@@ -1383,17 +1382,17 @@
           tableId: 'attendanceTable',
           paginationId: 'attendancePagination',
           getFilters: () => ({
-            student: document.getElementById('studentFilter')?.value?.toLowerCase() || '',
+            student: (document.getElementById('studentFilter')?.value || '').toLowerCase(),
             date: document.getElementById('attendanceDateFilter')?.value || '',
             status: document.getElementById('statusFilter')?.value || ''
           }),
           filterFn: (row, filters) => {
-            const matchesStudent = row.student_name?.toLowerCase().includes(filters.student);
-            const matchesStatus = !filters.status || row.status === filters.status;
+            const studentName = (row.student_name || '').toLowerCase();
+            const matchesStudent = !filters.student || studentName.includes(filters.student);
+            const matchesStatus = !filters.status || (row.status && row.status === filters.status);
             let matchesDate = true;
             if (filters.date) {
               const rowDate = row.date ? new Date(row.date) : null;
-              const filterDate = new Date(filters.date);
               matchesDate = rowDate && rowDate.toISOString().split('T')[0] === filters.date;
             }
             return matchesStudent && matchesDate && matchesStatus;
@@ -1405,11 +1404,12 @@
           paginationId: 'modulePagination',
           getFilters: () => ({
             course_id: document.getElementById('courseFilter')?.value || '',
-            module: document.getElementById('moduleNameFilter')?.value?.toLowerCase() || ''
+            module: (document.getElementById('moduleNameFilter')?.value || '').toLowerCase()
           }),
           filterFn: (row, filters) => {
-            const matchesCourse = !filters.course_id || row.course_id === filters.course_id;
-            const matchesModule = row.module_name?.toLowerCase().includes(filters.module);
+            const matchesCourse = !filters.course_id || (row.course_id && row.course_id === filters.course_id);
+            const moduleName = (row.module_name || '').toLowerCase();
+            const matchesModule = !filters.module || moduleName.includes(filters.module);
             return matchesCourse && matchesModule;
           }
         }
@@ -1417,14 +1417,17 @@
 
       const { rows, tableId, paginationId, getFilters, filterFn } = filters[tab];
       const filterValues = getFilters();
+      console.log(`[${tab}] Filter values:`, filterValues);
       const filteredRows = rows.filter(row => filterFn(row, filterValues));
+      console.log(`[${tab}] Filtered rows:`, filteredRows);
       renderTableRows(tableId, filteredRows, tab);
       updatePagination(paginationId, filteredRows.length, tab);
+      initializeColumnResizing(tableId);
 
       if (tab === 'attendance') {
         updateAttendanceChart();
       }
-    }, 300);
+    }, 200); // debounce delay reduced to 200ms
 
     function renderTableRows(tableId, rows, tab) {
       const tableBody = document.querySelector(`#${tableId} tbody`);
