@@ -466,6 +466,20 @@
       font-size: 0.75rem;
     }
 
+    .sortable {
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+    }
+
+    .sort-indicator {
+      font-size: 0.8em;
+      margin-left: 4px;
+      color: #888;
+      position: relative;
+      top: -1px;
+    }
+
     @media (max-width: 768px) {
       header h1 {
         font-size: 1.125rem;
@@ -569,21 +583,21 @@
         <table id="weeklyTable">
           <thead>
             <tr>
-              <th data-column="0">Week<div class="resize-handle"></div></th>
-              <th data-column="1">Number<div class="resize-handle"></div></th>
-              <th data-column="2">Course<div class="resize-handle"></div></th>
-              <th data-column="3">Modules<div class="resize-handle"></div></th>
-              <th data-column="4">Topics<div class="resize-handle"></div></th>
-              <th data-column="5">Date<div class="resize-handle"></div></th>
-              <th data-column="6">Duration<div class="resize-handle"></div></th>
-              <th data-column="7">Class Number<div class="resize-handle"></div></th>
-              <th data-column="8">Note Links<div class="resize-handle"></div></th>
-              <th data-column="9">Task List<div class="resize-handle"></div></th>
-              <th data-column="10">Task Links<div class="resize-handle"></div></th>
-              <th data-column="11">Additional Tasks<div class="resize-handle"></div></th>
-              <th data-column="12">Instructor<div class="resize-handle"></div></th>
-              <th data-column="13">Status<div class="resize-handle"></div></th>
-              <th data-column="14">Actions</th>
+              <th class="sortable" data-column="week">Week<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th class="sortable" data-column="number">Number<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th class="sortable" data-column="course_name">Course<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th class="sortable" data-column="modules">Modules<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th class="sortable" data-column="topics">Topics<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th class="sortable" data-column="date">Date<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th class="sortable" data-column="duration">Duration<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th class="sortable" data-column="class_number">Class Number<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th class="sortable" data-column="note_links">Note Links<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th class="sortable" data-column="task_list">Task List<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th class="sortable" data-column="task_links">Task Links<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th class="sortable" data-column="additional_tasks">Additional Tasks<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th class="sortable" data-column="instructor">Instructor<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th class="sortable" data-column="status">Status<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -610,11 +624,11 @@
         <table id="attendanceTable">
           <thead>
             <tr>
-              <th data-column="0">Student Name<div class="resize-handle"></div></th>
-              <th data-column="1">Date<div class="resize-handle"></div></th>
-              <th data-column="2">Status<div class="resize-handle"></div></th>
-              <th data-column="3">Notes<div class="resize-handle"></div></th>
-              <th data-column="4">Actions</th>
+              <th class="sortable" data-column="student_name">Student Name<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th class="sortable" data-column="date">Date<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th class="sortable" data-column="status">Status<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th class="sortable" data-column="notes">Notes<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -641,12 +655,12 @@
         <table id="moduleTable">
           <thead>
             <tr>
-              <th data-column="0">Course<div class="resize-handle"></div></th>
-              <th data-column="1">Module Name<div class="resize-handle"></div></th>
-              <th data-column="2">Description<div class="resize-handle"></div></th>
-              <th data-column="3">Duration (hrs)<div class="resize-handle"></div></th>
-              <th data-column="4">Topics<div class="resize-handle"></div></th>
-              <th data-column="5">Actions</th>
+              <th class="sortable" data-column="course_name">Course<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th class="sortable" data-column="module_name">Module Name<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th class="sortable" data-column="description">Description<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th class="sortable" data-column="duration">Duration (hrs)<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th class="sortable" data-column="topics">Topics<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -697,6 +711,12 @@
     let filteredRows = { weekly: [], attendance: [], modules: [] };
     let datepickers = [];
     let attendanceChart;
+
+    const sortState = {
+      weekly: { column: null, direction: 'asc' },
+      attendance: { column: null, direction: 'asc' },
+      modules: { column: null, direction: 'asc' }
+    };
 
     const sampleWeeklyData = [
       {
@@ -1431,6 +1451,65 @@
       }
     }, 200);
 
+    function sortRows(tab, column) {
+      if (!column) return;
+      const state = sortState[tab];
+      if (state.column === column) {
+        state.direction = state.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        state.column = column;
+        state.direction = 'asc';
+      }
+      filteredRows[tab].sort((a, b) => {
+        let aVal = a[column] ?? '';
+        let bVal = b[column] ?? '';
+        if (!isNaN(parseFloat(aVal)) && !isNaN(parseFloat(bVal))) {
+          aVal = parseFloat(aVal);
+          bVal = parseFloat(bVal);
+        } else {
+          aVal = (aVal + '').toLowerCase();
+          bVal = (bVal + '').toLowerCase();
+        }
+        if (aVal < bVal) return state.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return state.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+      currentPages[tab] = 1;
+      renderTableRows(tab + 'Table', filteredRows[tab], tab);
+      updatePagination(tab + 'Pagination', filteredRows[tab].length, tab);
+      updateSortIndicators(tab);
+    }
+
+    function updateSortIndicators(tab) {
+      const tableId = tab + 'Table';
+      const ths = document.querySelectorAll(`#${tableId} th.sortable`);
+      ths.forEach(th => {
+        const indicator = th.querySelector('.sort-indicator');
+        if (!indicator) return;
+        const col = th.getAttribute('data-column');
+        if (sortState[tab].column === col) {
+          indicator.textContent = sortState[tab].direction === 'asc' ? '▲' : '▼';
+          th.classList.add('sorted');
+        } else {
+          indicator.textContent = '';
+          th.classList.remove('sorted');
+        }
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      ['weekly', 'attendance', 'modules'].forEach(tab => {
+        const tableId = tab + 'Table';
+        const ths = document.querySelectorAll(`#${tableId} th.sortable`);
+        ths.forEach(th => {
+          th.onclick = (e) => {
+            if (e.target.classList.contains('resize-handle')) return;
+            sortRows(tab, th.getAttribute('data-column'));
+          };
+        });
+      });
+    });
+
     function renderTableRows(tableId, rows, tab) {
       const tableBody = document.querySelector(`#${tableId} tbody`);
       if (!tableBody) {
@@ -1444,6 +1523,7 @@
 
       if (paginatedRows.length === 0) {
         tableBody.innerHTML = `<tr><td colspan="${tableId === 'weeklyTable' ? 15 : tableId === 'attendanceTable' ? 5 : 6}">No data available</td></tr>`;
+        updateSortIndicators(tab);
         return;
       }
 
@@ -1497,6 +1577,7 @@
         }
         tableBody.appendChild(newRow);
       });
+      updateSortIndicators(tab);
     }
 
     function updatePagination(paginationId, totalRows, tab) {
