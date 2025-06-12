@@ -609,7 +609,6 @@
 
     <div id="attendanceTab" class="tab-content">
       <div class="filters">
-        <input type="text" id="studentFilter" placeholder="Filter by Student" oninput="filterTable('attendance')">
         <input type="text" id="attendanceDateFilter" placeholder="Filter by Date">
         <select id="statusFilter" onchange="filterTable('attendance')">
           <option value="">Filter by Status</option>
@@ -660,6 +659,7 @@
               <th class="sortable" data-column="description">Description<span class="sort-indicator"></span><div class="resize-handle"></div></th>
               <th class="sortable" data-column="duration">Duration (hrs)<span class="sort-indicator"></span><div class="resize-handle"></div></th>
               <th class="sortable" data-column="topics">Topics<span class="sort-indicator"></span><div class="resize-handle"></div></th>
+              <th class="sortable" data-column="timestamp">Last Modified (IST)<span class="sort-indicator"></span><div class="resize-handle"></div></th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -685,7 +685,7 @@
     }
 
     const SUPABASE_URL = 'https://rrdjygjylthrzygzkrnr.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyZGp5Z2p5bHRocnp5Z3prcm5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1MTYyMjAsImV4cCI6MjA2NDA5MjIyMH0.i7A1LO7SL_Qqr7Z2Oq8ObpafYflrY4mPCXx2UnX2bHs';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJyZGp5Z2p5bHRocnp5Z3prcm5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1MTYyMjAsImV4cCI6MjA2NDA5MjIyMH0.i7A1LO7SL_Qqr7Z2Oq8ObpafYflrY4mPCXx2UnX2bHs'; // <-- Replace with your new anon/public key
     let supabaseClient;
     try {
       supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -711,6 +711,18 @@
     let filteredRows = { weekly: [], attendance: [], modules: [] };
     let datepickers = [];
     let attendanceChart;
+
+    const studentNames = [
+      'Toms Babu',
+      'AJL BSC AIMA',
+      'Muhamad Shaheen',
+      'Jijin S',
+      'Muhammad Sanshad',
+      'Sooraj P',
+      'Afsal Rahiman',
+      'Muhammad Ishak',
+      'Safvan'
+    ];
 
     const sortState = {
       weekly: { column: null, direction: 'asc' },
@@ -741,7 +753,7 @@
     const sampleAttendanceData = [
       {
         id: generateUUID(),
-        student_name: "John Doe",
+        student_name: "Toms Babu",
         date: "2025-06-01",
         status: "Present",
         notes: "Attended full session",
@@ -812,6 +824,11 @@
       if (loader) {
         loader.classList.remove('hidden');
       }
+    }
+
+    function formatTimestampToIST(utcTimestamp) {
+      const date = new Date(utcTimestamp);
+      return date.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
     }
 
     async function checkAuthState() {
@@ -1000,10 +1017,8 @@
           if (moduleFilter) moduleFilter.value = '';
           if (dateFilter) dateFilter.value = '';
         } else if (tab === 'attendance') {
-          const studentFilter = document.getElementById('studentFilter');
           const attendanceDateFilter = document.getElementById('attendanceDateFilter');
           const statusFilter = document.getElementById('statusFilter');
-          if (studentFilter) studentFilter.value = '';
           if (attendanceDateFilter) attendanceDateFilter.value = '';
           if (statusFilter) statusFilter.value = '';
         } else {
@@ -1167,7 +1182,7 @@
           collection.rows.push(...data.map(row => ({
             ...row,
             rowId: row.id,
-            course_name: row.courses?.name || courses.find(c => c.id === row.course_id)?.name || ''
+            course_name: row.courses?.name || courses.find(c => c.id === row.course_id)?.name || 'Unknown Course'
           })));
           filteredRows[collection.name.replace('_plan', '')] = [...collection.rows];
         } catch (err) {
@@ -1177,7 +1192,7 @@
           collection.rows.push(...collection.sampleData.map(row => ({
             ...row,
             rowId: row.id,
-            course_name: courses.find(c => c.id === row.course_id)?.name || ''
+            course_name: courses.find(c => c.id === row.course_id)?.name || 'Unknown Course'
           })));
           filteredRows[collection.name.replace('_plan', '')] = [...collection.rows];
         }
@@ -1270,7 +1285,7 @@
                         'modules';
         const tableId = tabName + 'Table';
         const rows = filteredRows[tabName];
-        currentPages[tabName] = 1; // Reset to first page on tab switch
+        currentPages[tabName] = 1;
         renderTableRows(tableId, rows, tabName);
         updatePagination(tabName + 'Pagination', rows.length, tabName);
         initializeColumnResizing(tableId);
@@ -1284,9 +1299,14 @@
     function updateWeekFilter(rows) {
       const weekFilter = document.getElementById('weekFilter');
       if (!weekFilter) return;
+      
       weekFilter.innerHTML = '<option value="">Filter by Week</option>';
-      const weeks = [...new Set(rows.map(row => row.week || '').filter(week => week.trim()))]
+      
+      const weeks = [...new Set(rows
+        .map(row => row.week || '')
+        .filter(week => week.trim()))]
         .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+      
       weeks.forEach(week => {
         const option = document.createElement('option');
         option.value = week;
@@ -1372,7 +1392,7 @@
         return;
       }
 
-      currentPages[tab] = 1; // Reset to first page on filter
+      currentPages[tab] = 1;
 
       const filters = {
         weekly: {
@@ -1404,20 +1424,17 @@
           tableId: 'attendanceTable',
           paginationId: 'attendancePagination',
           getFilters: () => ({
-            student: (document.getElementById('studentFilter')?.value || '').toLowerCase(),
             date: document.getElementById('attendanceDateFilter')?.value || '',
             status: document.getElementById('statusFilter')?.value || ''
           }),
           filterFn: (row, filters) => {
-            const studentName = (row.student_name || '').toLowerCase();
-            const matchesStudent = !filters.student || studentName.includes(filters.student);
             const matchesStatus = !filters.status || (row.status && row.status === filters.status);
             let matchesDate = true;
             if (filters.date) {
               const rowDate = row.date ? new Date(row.date) : null;
               matchesDate = rowDate && rowDate.toISOString().split('T')[0] === filters.date;
             }
-            return matchesStudent && matchesDate && matchesStatus;
+            return matchesDate && matchesStatus;
           }
         },
         modules: {
@@ -1522,7 +1539,7 @@
       const paginatedRows = rows.slice(start, end);
 
       if (paginatedRows.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="${tableId === 'weeklyTable' ? 15 : tableId === 'attendanceTable' ? 5 : 6}">No data available</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="${tableId === 'weeklyTable' ? 15 : tableId === 'attendanceTable' ? 5 : 7}">No data available</td></tr>`;
         updateSortIndicators(tab);
         return;
       }
@@ -1569,6 +1586,7 @@
             <td>${row.description || ''}</td>
             <td>${row.duration || ''}</td>
             <td>${row.topics || ''}</td>
+            <td>${row.timestamp ? formatTimestampToIST(row.timestamp) : ''}</td>
             <td class="actions">
               <button class="edit-btn" onclick="editRow(event, this, '${tab}')" data-tooltip="Edit Row"><i class="fas fa-edit"></i></button>
               <button class="delete-btn" onclick="deleteRow(event, this, '${tab}')" data-tooltip="Delete Row"><i class="fas fa-trash"></i></button>
@@ -1642,11 +1660,67 @@
       const newRowId = generateUUID();
       newRow.setAttribute('data-rowid', newRowId);
       newRow.setAttribute('data-new', 'true');
-      newRow.innerHTML = tab === 'weekly' ?
-        '<td></td>'.repeat(14) + '<td class="actions"><button class="edit-btn" onclick="editRow(event, this, \'weekly\')" data-tooltip="Edit Row"><i class="fas fa-edit"></i></button><button class="delete-btn" onclick="deleteRow(event, this, \'weekly\')" data-tooltip="Delete Row"><i class="fas fa-trash"></i></button></td>' :
-        tab === 'attendance' ?
-        '<td></td>'.repeat(4) + '<td class="actions"><button class="edit-btn" onclick="editRow(event, this, \'attendance\')" data-tooltip="Edit Row"><i class="fas fa-edit"></i></button><button class="delete-btn" onclick="deleteRow(event, this, \'attendance\')" data-tooltip="Delete Row"><i class="fas fa-trash"></i></button></td>' :
-        '<td></td>'.repeat(5) + '<td class="actions"><button class="edit-btn" onclick="editRow(event, this, \'modules\')" data-tooltip="Edit Row"><i class="fas fa-edit"></i></button><button class="delete-btn" onclick="deleteRow(event, this, \'modules\')" data-tooltip="Delete Row"><i class="fas fa-trash"></i></button></td>';
+
+      const defaultCourseId = courses[0]?.id || '';
+
+      // Prepare default row object and push to array
+      let newObj;
+      if (tab === 'weekly') {
+        newObj = {
+          id: newRowId,
+          rowId: newRowId,
+          week: '',
+          number: '',
+          course_id: defaultCourseId,
+          modules: '',
+          topics: '',
+          date: '',
+          duration: '',
+          class_number: '',
+          note_links: '',
+          task_list: '',
+          task_links: '',
+          additional_tasks: '',
+          instructor: '',
+          status: '',
+          timestamp: new Date().toISOString(),
+          course_name: courses.find(c => c.id === defaultCourseId)?.name || ''
+        };
+        weeklyRows.push(newObj);
+        filteredRows.weekly.push(newObj);
+        newRow.innerHTML = '<td></td>'.repeat(14) + '<td class="actions"><button class="edit-btn" onclick="editRow(event, this, \'weekly\')" data-tooltip="Edit Row"><i class="fas fa-edit"></i></button><button class="delete-btn" onclick="deleteRow(event, this, \'weekly\')" data-tooltip="Delete Row"><i class="fas fa-trash"></i></button></td>';
+      } else if (tab === 'attendance') {
+        newObj = {
+          id: newRowId,
+          rowId: newRowId,
+          student_name: studentNames[0],
+          date: '',
+          status: 'Present',
+          notes: '',
+          course_id: defaultCourseId,
+          session_type: 'Lecture',
+          duration_minutes: 120,
+          timestamp: new Date().toISOString()
+        };
+        attendanceRows.push(newObj);
+        filteredRows.attendance.push(newObj);
+        newRow.innerHTML = '<td></td>'.repeat(4) + '<td class="actions"><button class="edit-btn" onclick="editRow(event, this, \'attendance\')" data-tooltip="Edit Row"><i class="fas fa-edit"></i></button><button class="delete-btn" onclick="deleteRow(event, this, \'attendance\')" data-tooltip="Delete Row"><i class="fas fa-trash"></i></button></td>';
+      } else {
+        newObj = {
+          id: newRowId,
+          rowId: newRowId,
+          course_id: defaultCourseId,
+          module_name: '',
+          description: '',
+          duration: '',
+          topics: '',
+          timestamp: new Date().toISOString(),
+          course_name: courses.find(c => c.id === defaultCourseId)?.name || ''
+        };
+        moduleRows.push(newObj);
+        filteredRows.modules.push(newObj);
+        newRow.innerHTML = `<td></td><td></td><td></td><td></td><td></td><td></td><td class="actions"><button class="edit-btn" onclick="editRow(event, this, 'modules')" data-tooltip="Edit Row"><i class="fas fa-edit"></i></button><button class="delete-btn" onclick="deleteRow(event, this, 'modules')" data-tooltip="Delete Row"><i class="fas fa-trash"></i></button></td>`;
+      }
       tableBody.appendChild(newRow);
       editRow(null, newRow.querySelector('.edit-btn'), tab);
     }
@@ -1668,6 +1742,68 @@
       datepickers.forEach(dp => dp.destroy());
       datepickers = [];
 
+      const rows = tab === 'weekly' ? weeklyRows :
+                   tab === 'attendance' ? attendanceRows :
+                   moduleRows;
+      let rowData = rows.find(r => r.rowId === rowId);
+
+      // If not found but it's a new row, use a default object
+      if (!rowData && row.getAttribute('data-new') === 'true') {
+        const defaultCourseId = courses[0]?.id || '';
+        if (tab === 'weekly') {
+          rowData = {
+            id: rowId,
+            rowId: rowId,
+            week: '',
+            number: '',
+            course_id: defaultCourseId,
+            modules: '',
+            topics: '',
+            date: '',
+            duration: '',
+            class_number: '',
+            note_links: '',
+            task_list: '',
+            task_links: '',
+            additional_tasks: '',
+            instructor: '',
+            status: '',
+            timestamp: new Date().toISOString(),
+            course_name: courses.find(c => c.id === defaultCourseId)?.name || ''
+          };
+        } else if (tab === 'attendance') {
+          rowData = {
+            id: rowId,
+            rowId: rowId,
+            student_name: studentNames[0],
+            date: '',
+            status: 'Present',
+            notes: '',
+            course_id: defaultCourseId,
+            session_type: 'Lecture',
+            duration_minutes: 120,
+            timestamp: new Date().toISOString()
+          };
+        } else {
+          rowData = {
+            id: rowId,
+            rowId: rowId,
+            course_id: defaultCourseId,
+            module_name: '',
+            description: '',
+            duration: '',
+            topics: '',
+            timestamp: new Date().toISOString(),
+            course_name: courses.find(c => c.id === defaultCourseId)?.name || ''
+          };
+        }
+      }
+
+      if (!rowData) {
+        showError('Error: Row data not found.');
+        return;
+      }
+
       const cells = Array.from(row.children).slice(0, row.children.length - 1);
       cells.forEach((cell, index) => {
         const currentValue = cell.innerText;
@@ -1676,37 +1812,64 @@
           const select = document.createElement('select');
           select.className = 'edit-input';
           select.innerHTML = courses.map(course => `<option value="${course.id}">${course.name}</option>`).join('');
-          select.value = courses.find(c => c.name === currentValue)?.id || courses[0]?.id;
+          select.value = rowData.course_id || courses[0]?.id || '';
           cell.appendChild(select);
         } else if ((tab === 'weekly' && index === 5) || (tab === 'attendance' && index === 1)) {
           const input = document.createElement('input');
           input.className = 'flatpickr-input';
           input.readOnly = true;
-          input.value = currentValue;
+          input.value = rowData.date || '';
           cell.appendChild(input);
           const fp = flatpickr(input, {
             dateFormat: 'Y-m-d',
             allowInput: false,
-            defaultDate: currentValue || null,
+            defaultDate: rowData.date || null,
             onChange: (selectedDates, dateStr) => input.value = dateStr
           });
           datepickers.push(fp);
+        } else if (tab === 'attendance' && index === 0) {
+          const select = document.createElement('select');
+          select.className = 'edit-input';
+          select.innerHTML = studentNames.map(name => `<option value="${name}">${name}</option>`).join('');
+          select.value = rowData.student_name || studentNames[0];
+          cell.appendChild(select);
         } else if (tab === 'attendance' && index === 2) {
           const select = document.createElement('select');
           select.className = 'edit-input';
           select.innerHTML = '<option value="Present">Present</option><option value="Absent">Absent</option>';
-          select.value = currentValue || 'Present';
+          select.value = rowData.status || 'Present';
           cell.appendChild(select);
         } else if (tab === 'weekly' && index === 13) {
           const select = document.createElement('select');
           select.className = 'edit-input';
           select.innerHTML = '<option value="Planned">Planned</option><option value="In Progress">In Progress</option><option value="Completed">Completed</option>';
-          select.value = currentValue || 'Planned';
+          select.value = rowData.status || 'Planned';
           cell.appendChild(select);
+        } else if (tab === 'modules' && index === 5) {
+          const div = document.createElement('div');
+          div.textContent = formatTimestampToIST(rowData.timestamp);
+          cell.appendChild(div);
         } else {
           const input = document.createElement('input');
           input.className = 'edit-input';
-          input.value = currentValue;
+          // Use rowData fields for value
+          let val = '';
+          if (tab === 'weekly') {
+            val = [
+              rowData.week, rowData.number, rowData.course_name, rowData.modules, rowData.topics,
+              rowData.date, rowData.duration, rowData.class_number, rowData.note_links, rowData.task_list,
+              rowData.task_links, rowData.additional_tasks, rowData.instructor, rowData.status
+            ][index] || '';
+          } else if (tab === 'attendance') {
+            val = [
+              rowData.student_name, rowData.date, rowData.status, rowData.notes
+            ][index] || '';
+          } else {
+            val = [
+              rowData.course_name, rowData.module_name, rowData.description, rowData.duration, rowData.topics, rowData.timestamp
+            ][index] || '';
+          }
+          input.value = val;
           cell.appendChild(input);
         }
       });
@@ -1799,8 +1962,14 @@
         timestamp: new Date().toISOString()
       };
 
-      if (!rowData.week && !rowData.student_name && !rowData.course_id) {
-        showError('Key field (Week, Student Name, or Course ID) is required.');
+      if (!rowData.week && !rowData.student_name && !rowData.module_name) {
+        showError('Key field (Week, Student Name, or Module Name) is required.');
+        button.classList.remove('loading');
+        button.disabled = false;
+        return;
+      }
+      if ((tab === 'weekly' || tab === 'modules') && !rowData.course_id) {
+        showError('Course selection is required.');
         button.classList.remove('loading');
         button.disabled = false;
         return;
@@ -1904,35 +2073,6 @@
       button.disabled = true;
       const row = button.closest('tr');
       const rowId = row.getAttribute('data-rowid');
-
-      if (row.getAttribute('data-new') === 'true') {
-        row.remove();
-        button.classList.remove('loading');
-        button.disabled = false;
-        alert('Row deleted successfully!');
-        const tableId = tab + 'Table';
-        renderTableRows(tableId, filteredRows[tab], tab);
-        updatePagination(tab + 'Pagination', filteredRows[tab].length, tab);
-        initializeColumnResizing(tableId);
-        return;
-      }
-
-      const rows = tab === 'weekly' ? weeklyRows :
-                   tab === 'attendance' ? attendanceRows :
-                   moduleRows;
-      const rowIndex = rows.findIndex(r => r.rowId === rowId);
-      if (rowIndex === -1) {
-        row.remove();
-        alert('Row removed from display (not found in storage).');
-        button.classList.remove('loading');
-        button.disabled = false;
-        const tableId = tab + 'Table';
-        renderTableRows(tableId, filteredRows[tab], tab);
-        updatePagination(tab + 'Pagination', filteredRows[tab].length, tab);
-        initializeColumnResizing(tableId);
-        return;
-      }
-
       const success = await deleteDataFromSupabase(tab, rowId);
       if (!success) {
         button.classList.remove('loading');
@@ -1940,8 +2080,18 @@
         return;
       }
 
-      rows.splice(rowIndex, 1);
-      filteredRows[tab] = filteredRows[tab].filter(r => r.rowId !== rowId);
+      const rows = tab === 'weekly' ? weeklyRows :
+                   tab === 'attendance' ? attendanceRows :
+                   moduleRows;
+      const rowIndex = rows.findIndex(r => r.rowId === rowId);
+      if (rowIndex !== -1) {
+        rows.splice(rowIndex, 1);
+      }
+      const filteredIndex = filteredRows[tab].findIndex(r => r.rowId === rowId);
+      if (filteredIndex !== -1) {
+        filteredRows[tab].splice(filteredIndex, 1);
+      }
+
       alert('Row deleted successfully!');
       button.classList.remove('loading');
       button.disabled = false;
@@ -1950,69 +2100,77 @@
       renderTableRows(tableId, filteredRows[tab], tab);
       updatePagination(tab + 'Pagination', filteredRows[tab].length, tab);
       initializeColumnResizing(tableId);
+
+      if (tab === 'attendance') {
+        updateAttendanceChart();
+      }
     }
 
-    async function resetFilters(tab) {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (!session) {
-        handleLogout();
-        return;
-      }
-
+    function resetFilters(tab) {
       if (tab === 'weekly') {
-        const weekFilter = document.getElementById('weekFilter');
-        const courseFilterWeekly = document.getElementById('courseFilterWeekly');
-        const moduleFilter = document.getElementById('moduleFilter');
-        const dateFilter = document.getElementById('dateFilter');
-        if (weekFilter) weekFilter.value = '';
-        if (courseFilterWeekly) courseFilterWeekly.value = '';
-        if (moduleFilter) moduleFilter.value = '';
-        if (dateFilter) dateFilter.value = '';
+        document.getElementById('weekFilter').value = '';
+        document.getElementById('courseFilterWeekly').value = '';
+        document.getElementById('moduleFilter').value = '';
+        document.getElementById('dateFilter').value = '';
       } else if (tab === 'attendance') {
-        const studentFilter = document.getElementById('studentFilter');
-        const attendanceDateFilter = document.getElementById('attendanceDateFilter');
-        const statusFilter = document.getElementById('statusFilter');
-        if (studentFilter) studentFilter.value = '';
-        if (attendanceDateFilter) attendanceDateFilter.value = '';
-        if (statusFilter) statusFilter.value = '';
+        document.getElementById('attendanceDateFilter').value = '';
+        document.getElementById('statusFilter').value = '';
       } else {
-        const courseFilter = document.getElementById('courseFilter');
-        const moduleNameFilter = document.getElementById('moduleNameFilter');
-        if (courseFilter) courseFilter.value = '';
-        if (moduleNameFilter) moduleNameFilter.value = '';
+        document.getElementById('courseFilter').value = '';
+        document.getElementById('moduleNameFilter').value = '';
       }
       currentPages[tab] = 1;
       filteredRows[tab] = [...(tab === 'weekly' ? weeklyRows : tab === 'attendance' ? attendanceRows : moduleRows)];
       const tableId = tab + 'Table';
       renderTableRows(tableId, filteredRows[tab], tab);
       updatePagination(tab + 'Pagination', filteredRows[tab].length, tab);
-      initializeColumnResizing(tableId);
       if (tab === 'attendance') {
         updateAttendanceChart();
       }
     }
 
-    async function exportTableToExcel(tableId) {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (!session) {
-        handleLogout();
+    function exportTableToExcel(tableId) {
+      const table = document.getElementById(tableId);
+      if (!table) {
+        showError('Table not found for export.');
         return;
       }
 
-      const table = document.getElementById(tableId);
-      if (!table) return;
-      const wb = XLSX.utils.table_to_book(table, { sheet: tableId.replace('Table', '') });
-      XLSX.writeFile(wb, `${tableId.replace('Table', '')}_ISET_QA_Tracker.xlsx`);
+      const rows = Array.from(table.querySelectorAll('tr'));
+      if (rows.length === 0) {
+        showError('No data to export.');
+        return;
+      }
+
+      const data = rows.map(row => {
+        const cells = Array.from(row.querySelectorAll('th, td'));
+        return cells.map(cell => {
+          if (cell.classList.contains('actions')) return '';
+          const input = cell.querySelector('input, select');
+          return input ? input.value : cell.innerText;
+        }).filter(text => text !== '');
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+      XLSX.writeFile(wb, `${tableId.replace('Table', '')}_export.xlsx`);
     }
 
-    window.onload = async function() {
+    document.addEventListener('DOMContentLoaded', async () => {
       try {
         await checkAuthState();
       } catch (err) {
-        showError('Error: Failed to initialize application.', 'loginErrorMessage');
+        console.error('Error during initialization:', err);
+        showError('Initialization failed: ' + err.message, 'loginErrorMessage');
         hidePageLoader();
       }
-    };
+
+      const logoutButton = document.getElementById('logoutButton');
+      if (logoutButton) {
+        logoutButton.addEventListener('click', handleLogout);
+      }
+    });
   </script>
 </body>
 </html>
