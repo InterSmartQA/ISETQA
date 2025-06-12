@@ -480,6 +480,15 @@
       top: -1px;
     }
 
+    .present-status {
+      color: #34a853;
+      font-weight: bold;
+    }
+    .absent-status {
+      color: #d93025;
+      font-weight: bold;
+    }
+
     @media (max-width: 768px) {
       header h1 {
         font-size: 1.125rem;
@@ -1319,31 +1328,38 @@
       const ctx = document.getElementById('attendanceChart')?.getContext('2d');
       if (!ctx) return;
 
-      const statusCounts = filteredRows.attendance.reduce((acc, row) => {
-        acc[row.status] = (acc[row.status] || 0) + 1;
-        return acc;
-      }, {});
-
-      const labels = ['Present', 'Absent'];
-      const data = [
-        statusCounts['Present'] || 0,
-        statusCounts['Absent'] || 0
-      ];
+      // Student-wise present/absent count
+      const studentMap = {};
+      filteredRows.attendance.forEach(row => {
+        const name = row.student_name || 'Unknown';
+        if (!studentMap[name]) studentMap[name] = { Present: 0, Absent: 0 };
+        if ((row.status || '').toLowerCase() === 'present') studentMap[name].Present++;
+        else if ((row.status || '').toLowerCase() === 'absent') studentMap[name].Absent++;
+      });
+      const students = Object.keys(studentMap);
+      const presentCounts = students.map(s => studentMap[s].Present);
+      const absentCounts = students.map(s => studentMap[s].Absent);
 
       if (attendanceChart) {
         attendanceChart.destroy();
       }
 
       attendanceChart = new Chart(ctx, {
-        type: 'pie',
+        type: 'bar',
         data: {
-          labels: labels,
-          datasets: [{
-            label: 'Attendance Status',
-            data: data,
-            backgroundColor: ['#34a853', '#d93025'],
-            borderWidth: 1
-          }]
+          labels: students,
+          datasets: [
+            {
+              label: 'Present',
+              data: presentCounts,
+              backgroundColor: '#34a853'
+            },
+            {
+              label: 'Absent',
+              data: absentCounts,
+              backgroundColor: '#d93025'
+            }
+          ]
         },
         options: {
           responsive: true,
@@ -1360,13 +1376,28 @@
             },
             title: {
               display: true,
-              text: 'Attendance Overview',
+              text: 'Attendance Overview (Student-wise)',
               font: {
                 family: 'Roboto',
                 size: 16,
                 weight: '500'
               },
               color: '#202124'
+            }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Student'
+              }
+            },
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Count'
+              }
             }
           }
         }
@@ -1569,10 +1600,14 @@
             </td>
           `;
         } else if (tableId === 'attendanceTable') {
+          // Add color for Present/Absent
+          let statusClass = '';
+          if ((row.status || '').toLowerCase() === 'present') statusClass = 'present-status';
+          else if ((row.status || '').toLowerCase() === 'absent') statusClass = 'absent-status';
           newRow.innerHTML = `
             <td>${row.student_name || ''}</td>
             <td>${row.date || ''}</td>
-            <td>${row.status || ''}</td>
+            <td><span class="${statusClass}">${row.status || ''}</span></td>
             <td>${row.notes || ''}</td>
             <td class="actions">
               <button class="edit-btn" onclick="editRow(event, this, '${tab}')" data-tooltip="Edit Row"><i class="fas fa-edit"></i></button>
